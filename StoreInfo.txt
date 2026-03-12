@@ -1,0 +1,45 @@
+🤖 Google Play Store
+Short Description (80 chars max):
+Twist the cube. Match the colors. Don't let the stack overflow.
+Full Description:
+
+SpinStack — Twist · Drop · Match
+Think you're good at color puzzles? SpinStack has a third dimension that says otherwise.
+Each row of neon bricks has four hidden sides — and every side could be the key to your next clear. Tap bricks to shift their colors, swipe to spin the stack, and match all six bricks in a row to make it vanish. Sounds simple. It isn't.
+Every few taps, a new row drops. The stack keeps growing. The beat picks up. And suddenly you're spinning the cube frantically trying to find that one matching side before it all falls apart.
+Power-ups keep things spicy:
+💣 Bomb — blow up an entire row instantly
+⚡ Lightning — zap the row below yours
+🌈 Rainbow — paint a whole row your dominant color
+⭐ Star — pocket a quick 500-point bonus
+❄️ Freeze — buy yourself a few extra taps of breathing room
+Features:
+• 5 difficulty levels — from chill to flat-out Insane
+• Endless wave mode — each cleared board gets one row harder
+• Efficiency bonuses for clearing rows in 3 taps or fewer
+• 6 achievements to unlock
+• Colorblind-friendly mode
+• Procedurally synthesized music that gets tenser as the danger rises
+• No internet required
+One more wave. You've got this.
+
+🍎 Apple App Store
+Subtitle (30 chars):
+Neon cube color puzzle
+Description:
+
+The stack is rising. The music is thumping. Can you spin fast enough?
+SpinStack is a neon color-matching puzzle with a twist — literally. Every row of bricks wraps around a cube with four sides, and only one side is ever visible at a time. Swipe to rotate, tap to recolor, and match all six bricks in a row to clear it before the stack hits the top.
+It starts easy. It does not stay easy.
+What makes SpinStack different:
+Every row is a 3D object. The colors you need might be hiding on the back. Spin to find them, match to clear them, and race the ever-dropping rows to stay alive.
+Power-up bricks spawn mid-game and change everything:
+— 💣 Bomb: instant row destruction
+— ⚡ Lightning: obliterates the row below
+— 🌈 Rainbow: floods a row with its dominant color
+— ⭐ Star: 500-point windfall
+— ❄️ Freeze: delays the next incoming row
+Go deeper:
+Five difficulty levels from Easy to Insane. Each cleared board feeds straight into the next wave — same level, one more starting row. The further you go, the less time you have. The music knows.
+Colorblind mode included. No account needed. No nonsense.
+TWIST. DROP. MATCH.

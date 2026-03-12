@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SpinStack",
-    "slug": "SpinStack",
+    "slug": "spinstack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.slaminsoftware.spinstack"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,10 +21,37 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.slaminsoftware.spinstack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          },
+          "android": {
+            "kotlinVersion": "2.1.21"
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4492202957160787~9699181297",
+          "iosAppId": "ca-app-pub-4492202957160787~8381871404"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c6b1a713-6190-4d3d-9e5a-0557b1da4636"
+      }
+    },
+    "owner": "slaminsoftware"
   }
 }
