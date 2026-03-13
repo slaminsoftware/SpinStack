@@ -31,7 +31,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withRemoveRecordAudio",
       [
         "expo-build-properties",
         {
@@ -49,7 +48,8 @@
           "androidAppId": "ca-app-pub-4492202957160787~9699181297",
           "iosAppId": "ca-app-pub-4492202957160787~8381871404"
         }
-      ]
+      ],
+      "./plugins/withRemoveRecordAudio"
     ],
     "extra": {
       "eas": {
