@@ -235,8 +235,10 @@ export default function Game({
             rowsCleared: rowsClearedRef.current,
             levelIndex: selectedLevelIndex,
           });
-        if (!adsRemovedRef.current) {
-          // Show interstitial after every level (win or loss), then navigate
+        if (!adsRemovedRef.current && !didWin) {
+          // Show interstitial on loss, then navigate.
+          // On a win the ad plays after the precision challenge instead,
+          // so the player isn't interrupted mid-celebration.
           setTimeout(async () => {
             await AdManager.showInterstitial();
             proceed();

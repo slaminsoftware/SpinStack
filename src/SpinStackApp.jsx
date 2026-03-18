@@ -6,12 +6,14 @@ import React, { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { LEVELS } from "./game/constants";
 import { palette } from "./theme";
-import { getTutorialComplete, setTutorialComplete } from "./game/storage";
-import IAPManager from "./game/IAPManager";
+import { getTutorialComplete, setTutorialComplete, getAdsRemoved } from "./game/storage";
+// import IAPManager from "./game/IAPManager"; // RevenueCat — temporarily disabled
+import AdManager from "./game/AdManager";
 import StartScreen from "./components/StartScreen";
 import EndScreen from "./components/EndScreen";
 import TutorialScreen from "./components/TutorialScreen";
 import Game from "./components/Game";
+import ChallengeRouter from "./components/ChallengeRouter";
 
 export default function SpinStackApp() {
   const [screen, setScreen] = useState("loading");
@@ -23,9 +25,8 @@ export default function SpinStackApp() {
   const [sessionStats, setSessionStats] = useState(null);
 
   useEffect(() => {
-    // Initialise RevenueCat as early as possible so the price is ready by the
-    // time the player reaches the End Screen. init() is a no-op if called again.
-    IAPManager.init().catch(() => {});
+    // RevenueCat — temporarily disabled
+    // IAPManager.init().catch(() => {});
 
     getTutorialComplete().then((done) => {
       setScreen(done ? "start" : "tutorial");
@@ -44,17 +45,31 @@ export default function SpinStackApp() {
       setSessionStats(stats);
       if (didWin) {
         setGameResult("win");
-        // Advance to next wave — same difficulty, one more starting row
-        setWave((w) => {
-          const nextWave = w + 1;
-          setLevelConfig(buildConfig(selectedLevel, nextWave));
-          return nextWave;
-        });
-        setScreen("game");
+        // Show precision challenge before advancing to the next wave
+        setScreen("challenge");
       } else {
         setGameResult("lose");
         setScreen("end");
       }
+    },
+    [],
+  );
+
+  // Called when the precision challenge ends; shows an interstitial ad
+  // (unless the user has paid to remove ads), then starts the next wave.
+  const handleChallengeComplete = useCallback(
+    async (bonusScore) => {
+      setFinalScore((prev) => prev + bonusScore);
+      const adsRemoved = await getAdsRemoved();
+      if (!adsRemoved) {
+        await AdManager.showInterstitial();
+      }
+      setWave((w) => {
+        const nextWave = w + 1;
+        setLevelConfig(buildConfig(selectedLevel, nextWave));
+        return nextWave;
+      });
+      setScreen("game");
     },
     [selectedLevel, buildConfig],
   );
@@ -96,6 +111,13 @@ export default function SpinStackApp() {
           selectedLevelIndex={selectedLevel}
           wave={wave}
           onGameEnd={handleGameEnd}
+        />
+      )}
+
+      {screen === "challenge" && (
+        <ChallengeRouter
+          wave={wave}
+          onComplete={handleChallengeComplete}
         />
       )}
 

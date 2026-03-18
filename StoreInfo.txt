@@ -13,9 +13,12 @@ Power-ups keep things spicy:
 🌈 Rainbow — paint a whole row your dominant color
 ⭐ Star — pocket a quick 500-point bonus
 ❄️ Freeze — buy yourself a few extra taps of breathing room
+Clear a board? Prove it wasn't luck.
+Between waves, a bonus challenge drops — and it tests a completely different skill. Drop pieces onto hidden targets from memory. Match incoming colors to the right column before the timer kills your streak. Tap a sequence of columns in the exact order you memorized. Nail it and carry bonus points into the next wave. Fail and carry the shame.
 Features:
 • 5 difficulty levels — from chill to flat-out Insane
 • Endless wave mode — each cleared board gets one row harder
+• 3 rotating inter-wave bonus challenges — Blind Drop, Color Gauntlet, Sequence Drop
 • Efficiency bonuses for clearing rows in 3 taps or fewer
 • 6 achievements to unlock
 • Colorblind-friendly mode
@@ -39,6 +42,8 @@ Power-up bricks spawn mid-game and change everything:
 — 🌈 Rainbow: floods a row with its dominant color
 — ⭐ Star: 500-point windfall
 — ❄️ Freeze: delays the next incoming row
+Between every wave, a bonus challenge.
+Clearing a board earns you a challenge — three of them, rotating in sequence, each one testing something the main game doesn't. Blind Drop hides the targets after a brief reveal window and makes you drop from memory. Color Gauntlet fires colored pieces at you one by one and punishes hesitation. Sequence Drop shows you a column order for a few seconds, then goes dark — get it right and bank the bonus. Get it wrong and watch the points evaporate.
 Go deeper:
 Five difficulty levels from Easy to Insane. Each cleared board feeds straight into the next wave — same level, one more starting row. The further you go, the less time you have. The music knows.
 Colorblind mode included. No account needed. No nonsense.
