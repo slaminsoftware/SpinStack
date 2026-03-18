@@ -3,13 +3,14 @@
 // Displays final score, high score comparison, session stats,
 // unlocked achievements, and encouraging messages.
 // Includes a fully wired "Remove Ads" IAP using IAPManager (RevenueCat).
+// NOTE: Remove Ads feature is temporarily disabled (commented out).
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState/*, useCallback*/ } from 'react'; // useCallback: Remove Ads IAP — temporarily disabled
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet/*, Alert, ActivityIndicator*/ } from 'react-native'; // Alert, ActivityIndicator: Remove Ads IAP — temporarily disabled
 import { shared, palette } from '../theme';
-import { saveHighScore, getHighScores, getUnlockedAchievements, getAdsRemoved, setAdsRemoved } from '../game/storage';
+import { saveHighScore, getHighScores, getUnlockedAchievements/*, getAdsRemoved, setAdsRemoved*/ } from '../game/storage';
 import { ACHIEVEMENTS } from '../game/constants';
-import IAPManager from '../game/IAPManager';
+// import IAPManager from '../game/IAPManager'; // Remove Ads IAP — temporarily disabled
 
 const LOSS_MESSAGES = [
   "So close! Give it another shot 💪",
@@ -30,10 +31,10 @@ export default function EndScreen({ didWin, score, sessionStats, selectedLevelIn
   const [isNewBest,       setIsNewBest]       = useState(false);
   const [prevBest,        setPrevBest]        = useState(null);
   const [unlockedIds,     setUnlockedIds]     = useState([]);
-  const [adsRemoved,      setAdsRemovedState] = useState(false);
-  const [price,           setPrice]           = useState('$1.99');
-  const [purchasing,      setPurchasing]      = useState(false);
-  const [restoring,       setRestoring]       = useState(false);
+  // const [adsRemoved,      setAdsRemovedState] = useState(false); // Remove Ads IAP — temporarily disabled
+  // const [price,           setPrice]           = useState('$1.99'); // Remove Ads IAP — temporarily disabled
+  // const [purchasing,      setPurchasing]      = useState(false); // Remove Ads IAP — temporarily disabled
+  // const [restoring,       setRestoring]       = useState(false); // Remove Ads IAP — temporarily disabled
 
   const [message] = useState(() => {
     const pool = didWin ? WIN_MESSAGES : LOSS_MESSAGES;
@@ -42,84 +43,87 @@ export default function EndScreen({ didWin, score, sessionStats, selectedLevelIn
 
   useEffect(() => {
     (async () => {
-      const [wasNew, scores, ids, removed, storePrice] = await Promise.all([
+      const [wasNew, scores, ids/*, removed, storePrice*/] = await Promise.all([
         saveHighScore(selectedLevelIndex ?? 0, score),
         getHighScores(),
         getUnlockedAchievements(),
-        getAdsRemoved(),
-        IAPManager.getRemoveAdsPrice(),
+        // getAdsRemoved(),                     // Remove Ads IAP — temporarily disabled
+        // IAPManager.getRemoveAdsPrice(),       // Remove Ads IAP — temporarily disabled
       ]);
       setIsNewBest(wasNew);
       setPrevBest(scores[selectedLevelIndex ?? 0] ?? 0);
       setUnlockedIds(ids);
-      setAdsRemovedState(removed);
-      setPrice(storePrice);
+      // setAdsRemovedState(removed);           // Remove Ads IAP — temporarily disabled
+      // setPrice(storePrice);                  // Remove Ads IAP — temporarily disabled
 
+      // Remove Ads IAP — temporarily disabled
       // If local flag says not removed, double-check with RevenueCat
       // in case the user purchased on another device.
-      if (!removed) {
-        const entitled = await IAPManager.checkEntitlement();
-        if (entitled) {
-          await setAdsRemoved();
-          setAdsRemovedState(true);
-        }
-      }
+      // if (!removed) {
+      //   const entitled = await IAPManager.checkEntitlement();
+      //   if (entitled) {
+      //     await setAdsRemoved();
+      //     setAdsRemovedState(true);
+      //   }
+      // }
     })();
   }, []);
 
   // ── Purchase flow ────────────────────────────────────────────────────────────
-  const handleRemoveAds = useCallback(async () => {
-    if (purchasing || restoring) return;
-
-    Alert.alert(
-      'Remove Ads',
-      `Purchase "Remove Ads" for ${price} to permanently remove all interstitial ads.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: `Purchase (${price})`,
-          onPress: async () => {
-            setPurchasing(true);
-            try {
-              const result = await IAPManager.purchaseRemoveAds();
-              if (result.success) {
-                await setAdsRemoved();
-                setAdsRemovedState(true);
-                Alert.alert('Thank you! 🎉', 'Ads have been permanently removed. Enjoy SpinStack!');
-              } else if (!result.cancelled) {
-                Alert.alert('Purchase Failed', result.error ?? 'Something went wrong. Please try again.');
-              }
-            } finally {
-              setPurchasing(false);
-            }
-          },
-        },
-      ]
-    );
-  }, [purchasing, restoring, price]);
+  // Remove Ads IAP — temporarily disabled
+  // const handleRemoveAds = useCallback(async () => {
+  //   if (purchasing || restoring) return;
+  //
+  //   Alert.alert(
+  //     'Remove Ads',
+  //     `Purchase "Remove Ads" for ${price} to permanently remove all interstitial ads.`,
+  //     [
+  //       { text: 'Cancel', style: 'cancel' },
+  //       {
+  //         text: `Purchase (${price})`,
+  //         onPress: async () => {
+  //           setPurchasing(true);
+  //           try {
+  //             const result = await IAPManager.purchaseRemoveAds();
+  //             if (result.success) {
+  //               await setAdsRemoved();
+  //               setAdsRemovedState(true);
+  //               Alert.alert('Thank you! 🎉', 'Ads have been permanently removed. Enjoy SpinStack!');
+  //             } else if (!result.cancelled) {
+  //               Alert.alert('Purchase Failed', result.error ?? 'Something went wrong. Please try again.');
+  //             }
+  //           } finally {
+  //             setPurchasing(false);
+  //           }
+  //         },
+  //       },
+  //     ]
+  //   );
+  // }, [purchasing, restoring, price]);
 
   // ── Restore flow ─────────────────────────────────────────────────────────────
   // Required by App Store review guidelines for any non-consumable IAP.
-  const handleRestore = useCallback(async () => {
-    if (purchasing || restoring) return;
-    setRestoring(true);
-    try {
-      const result = await IAPManager.restorePurchases();
-      if (!result.success) {
-        Alert.alert('Restore Failed', result.error ?? 'Please check your internet connection and try again.');
-        return;
-      }
-      if (result.restored) {
-        await setAdsRemoved();
-        setAdsRemovedState(true);
-        Alert.alert('Purchases Restored', 'Ads have been removed. Welcome back!');
-      } else {
-        Alert.alert('Nothing to Restore', 'No previous purchase of Remove Ads was found on this account.');
-      }
-    } finally {
-      setRestoring(false);
-    }
-  }, [purchasing, restoring]);
+  // Remove Ads IAP — temporarily disabled
+  // const handleRestore = useCallback(async () => {
+  //   if (purchasing || restoring) return;
+  //   setRestoring(true);
+  //   try {
+  //     const result = await IAPManager.restorePurchases();
+  //     if (!result.success) {
+  //       Alert.alert('Restore Failed', result.error ?? 'Please check your internet connection and try again.');
+  //       return;
+  //     }
+  //     if (result.restored) {
+  //       await setAdsRemoved();
+  //       setAdsRemovedState(true);
+  //       Alert.alert('Purchases Restored', 'Ads have been removed. Welcome back!');
+  //     } else {
+  //       Alert.alert('Nothing to Restore', 'No previous purchase of Remove Ads was found on this account.');
+  //     }
+  //   } finally {
+  //     setRestoring(false);
+  //   }
+  // }, [purchasing, restoring]);
 
   const unlockedDefs = ACHIEVEMENTS.filter(a => unlockedIds.includes(a.id));
 
@@ -194,8 +198,8 @@ export default function EndScreen({ didWin, score, sessionStats, selectedLevelIn
           <Text style={shared.secondaryBtnText}>MAIN MENU</Text>
         </TouchableOpacity>
 
-        {/* Remove Ads IAP */}
-        {!adsRemoved && (
+        {/* Remove Ads IAP — temporarily disabled */}
+        {/* {!adsRemoved && (
           <View style={styles.iapBlock}>
             <TouchableOpacity
               style={[styles.removeAdsBtn, (purchasing || restoring) && styles.removeAdsBtnDisabled]}
@@ -223,7 +227,7 @@ export default function EndScreen({ didWin, score, sessionStats, selectedLevelIn
               )}
             </TouchableOpacity>
           </View>
-        )}
+        )} */}
       </View>
     </ScrollView>
   );
