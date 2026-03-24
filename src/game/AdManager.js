@@ -11,12 +11,12 @@ import { Platform } from "react-native";
 const AD_UNITS = {
   interstitial: Platform.select({
     android: "ca-app-pub-4492202957160787/2046846583",
-    ios: "ca-app-pub-4492202957160787/9039154984",
+    ios: "ca-app-pub-4492202957160787/2522853685",
     default: "ca-app-pub-3940256099942544/1033173712", // test fallback
   }),
   rewarded: Platform.select({
     android: "ca-app-pub-4492202957160787/9222181919",
-    ios: "ca-app-pub-4492202957160787~8381871404",
+    ios: "ca-app-pub-4492202957160787/6657726192",
     default: "ca-app-pub-3940256099942544/5224354917", // test fallback
   }),
 };
