@@ -14,6 +14,7 @@ const KEY = {
   tutorialComplete: 'spinstack:tutorialComplete',
   adsRemoved:       'spinstack:adsRemoved',
   playerXP:         'spinstack:playerXP',
+  quests:           'spinstack:quests',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,5 +127,14 @@ export async function addPlayerXP(amount) {
 
 export async function resetPlayerXP() {
   return setJSON(KEY.playerXP, 0);
+}
+
+// ─── Quest state storage ────────────────────────────────────────────────────
+export async function getQuestState() {
+  return getJSON(KEY.quests, null);
+}
+
+export async function setQuestState(state) {
+  return setJSON(KEY.quests, state);
 }
 
