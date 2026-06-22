@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { shared, palette } from '../theme';
+import QuestsPanel from './QuestsPanel';
 
 const DIFF_COLORS = {
   Easy:   '#39c939',
@@ -61,6 +62,9 @@ export default function StartScreen({ levels, selectedLevel, onSelectLevel, onSt
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Quests panel (daily/session objectives) */}
+        <QuestsPanel />
 
         <TouchableOpacity style={shared.primaryBtn} onPress={onStart} activeOpacity={0.85}>
           <Text style={shared.primaryBtnText}>PLAY</Text>

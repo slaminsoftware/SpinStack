@@ -47,6 +47,7 @@ import {
   getPlayerXP,
   addPlayerXP,
 } from "../game/storage";
+import { incrementProgress } from "../game/quests";
 import { shared, palette } from "../theme";
 
 // How many empty slots remain before danger pulse kicks in
@@ -422,6 +423,8 @@ export default function Game({
       rowsClearedRef.current += rowIndices.length;
       // Award XP for cleared rows (steady-grind progression)
       try { awardXP(XP_PER_ROW * rowIndices.length); } catch (_) {}
+      // Update quests progress for row clears
+      try { incrementProgress('clear_rows', rowIndices.length); } catch (_) {}
       if (rowsClearedRef.current >= 3) triggerAchievement("clean_sweep");
 
       setTimeout(() => {
@@ -433,6 +436,7 @@ export default function Game({
           const isWin = next.filter((r) => r !== null).length === 0;
           if (isWin) {
             setLastPowerup(`🎉 WAVE ${wave} CLEARED!`);
+            try { incrementProgress('clear_waves', 1); } catch (_) {}
             setTimeout(() => finish(true), 800);
           }
           return next;
@@ -568,6 +572,7 @@ export default function Game({
             setLastPowerup("💣 ROW DESTROYED!");
             SoundManager.play("specialBomb");
             try { awardXP(XP_PER_CLICK); } catch (_) {}
+            try { incrementProgress('tap', 1); } catch (_) {}
             clearRows([rowIdx], POINTS_PER_ROW);
             // Track bomb achievement
             incrementBombs().then((total) => {
@@ -600,6 +605,7 @@ export default function Game({
               );
               setClickCount((p) => p + 1);
               try { awardXP(XP_PER_CLICK); } catch (_) {}
+              try { incrementProgress('tap', 1); } catch (_) {}
               break;
             }
             setLastPowerup("⚡ ROW ZAPPED!");
@@ -620,6 +626,7 @@ export default function Game({
             // counter consistently with the fizzle (no-target) path above.
             setClickCount((p) => p + 1);
             try { awardXP(XP_PER_CLICK); } catch (_) {}
+            try { incrementProgress('tap', 1); } catch (_) {}
             break;
           }
 
@@ -646,6 +653,7 @@ export default function Game({
             SoundManager.play("specialRainbow");
             addScore(POINTS_PER_CLICK, null, tapPos);
             try { awardXP(XP_PER_CLICK); } catch (_) {}
+            try { incrementProgress('tap', 1); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -663,6 +671,7 @@ export default function Game({
             SoundManager.play("specialStar");
             addScore(500);
             try { awardXP(XP_PER_CLICK); } catch (_) {}
+            try { incrementProgress('tap', 1); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -689,6 +698,7 @@ export default function Game({
             setFreezeBonus((b) => b + clicksPerRow);
             addScore(POINTS_PER_CLICK * 2, null, tapPos);
             try { awardXP(XP_PER_CLICK); } catch (_) {}
+            try { incrementProgress('use_freeze', 1); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -724,6 +734,7 @@ export default function Game({
       );
       setClickCount((p) => p + 1);
       try { awardXP(XP_PER_CLICK); } catch (_) {}
+      try { incrementProgress('tap', 1); } catch (_) {}
     },
     [
       grid,
