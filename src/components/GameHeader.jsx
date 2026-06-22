@@ -3,7 +3,7 @@
 // side-rotation indicator with a visual cube thumbnail.
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { shared, palette } from '../theme';
 import { SIDES } from '../game/constants';
 
@@ -44,6 +44,10 @@ export default function GameHeader({
   onWatchAd,
   rewardedReady,
   wave = 1,
+  level = 1,
+  xp = 0,
+  xpToNext = 0,
+  xpAnim = null,
 }) {
   return (
     <>
@@ -71,8 +75,12 @@ export default function GameHeader({
           <Text style={[shared.statValue, { color: wave > 1 ? '#ffd700' : '#a0a0ff' }]}>{wave}</Text>
         </View>
         <View style={shared.statBox}>
-          <Text style={shared.statLabel}>ROWS</Text>
-          <Text style={shared.statValue}>{activeCount}</Text>
+          <Text style={shared.statLabel}>LEVEL</Text>
+          <Text style={shared.statValue}>{level}</Text>
+        </View>
+        <View style={shared.statBox}>
+          <Text style={shared.statLabel}>XP</Text>
+          <Text style={shared.statValue}>{xp.toLocaleString()}</Text>
         </View>
         <View style={shared.statBox}>
           <Text style={shared.statLabel}>NEXT ROW</Text>
@@ -80,6 +88,21 @@ export default function GameHeader({
             {clicksUntilNew}
           </Text>
         </View>
+      </View>
+
+      {/* XP progress bar */}
+      <View style={hStyles.xpBarWrap}>
+        <View style={hStyles.xpBarBg} />
+        {xpAnim ? (
+          <Animated.View
+            style={[
+              hStyles.xpBarFg,
+              { width: xpAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) },
+            ]}
+          />
+        ) : (
+          <View style={[hStyles.xpBarFg, { width: `${Math.max(0, Math.min(100, ((xpToNext ? ( (xpToNext) : 0) : 0)) ))}%` }]} />
+        )}
       </View>
 
       {/* Side indicator with cube visual and larger tap targets */}
@@ -166,6 +189,30 @@ const hStyles = StyleSheet.create({
     color: '#a0a0ff',
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+
+  xpBarWrap: {
+    marginTop: 8,
+    height: 12,
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  xpBarBg: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#15152b',
+    borderRadius: 8,
+  },
+  xpBarFg: {
+    position: 'absolute',
+    left: 8,
+    top: 1,
+    bottom: 1,
+    backgroundColor: palette.gold,
+    borderRadius: 8,
   },
 });
 

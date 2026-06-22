@@ -4,7 +4,7 @@
 // colorblind mode, RAINBOW dominant-color fix, enriched stats tracking.
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, ScrollView, PanResponder, StyleSheet } from "react-native";
+import { View, Text, ScrollView, PanResponder, StyleSheet, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import GameHeader from "./GameHeader";
@@ -22,6 +22,10 @@ import {
   POINTS_PER_ROW,
   SIDES,
   ACHIEVEMENTS,
+  XP_PER_CLICK,
+  XP_PER_ROW,
+  XP_BASE,
+  XP_EXPONENT,
 } from "../game/constants";
 import {
   makeInitialGrid,
@@ -40,6 +44,8 @@ import {
   getColorblindMode,
   setColorblindModePref,
   getAdsRemoved,
+  getPlayerXP,
+  addPlayerXP,
 } from "../game/storage";
 import { shared, palette } from "../theme";
 
@@ -82,6 +88,110 @@ export default function Game({
   const [overtimeSeconds, setOvertimeSeconds] = useState(OVERTIME_SECONDS);
   const [lastAchievement, setLastAchievement] = useState(null);
   const [rewardedReady, setRewardedReady] = useState(false);
+
+  // Player progression (XP & Level)
+  const [playerXP, setPlayerXP] = useState(0);
+  const [playerLevel, setPlayerLevel] = useState(1);
+
+  // keep a ref with current xp for safe reads inside callbacks
+  const playerXPRef = useRef(0);
+  useEffect(() => { playerXPRef.current = playerXP; }, [playerXP]);
+
+  // XP curve helpers: thresholds are total XP required to reach given level
+  const xpThreshold = useCallback((lvl) => (lvl <= 1 ? 0 : Math.floor(XP_BASE * Math.pow(lvl - 1, XP_EXPONENT))), []);
+  const calcLevelFromXP = useCallback((xp) => {
+    let lvl = 1;
+    while (xp >= xpThreshold(lvl + 1)) lvl++;
+    return lvl;
+  }, [xpThreshold]);
+
+  // Animated XP bar value (0..1)
+  const xpAnim = useRef(new Animated.Value(0)).current;
+
+  // helper to compute percent into current level
+  const percentForXP = useCallback((xp) => {
+    const lvl = calcLevelFromXP(xp);
+    const lower = xpThreshold(lvl);
+    const upper = xpThreshold(lvl + 1) || lower + 1;
+    return Math.max(0, Math.min(1, (xp - lower) / (upper - lower)));
+  }, [calcLevelFromXP, xpThreshold]);
+
+  // Load persisted XP on mount
+  useEffect(() => {
+    let mounted = true;
+    getPlayerXP().then((xp) => {
+      if (!mounted) return;
+      setPlayerXP(xp);
+      setPlayerLevel(calcLevelFromXP(xp));
+      // initialise animated bar
+      xpAnim.setValue(percentForXP(xp));
+    });
+    return () => { mounted = false; };
+  }, [calcLevelFromXP, percentForXP, xpAnim]);
+
+  // animate xp bar to a target percent over given duration
+  const animateXPTo = useCallback((target, duration = 500) => {
+    return new Promise((res) => {
+      Animated.timing(xpAnim, {
+        toValue: target,
+        duration,
+        useNativeDriver: false,
+      }).start(() => res());
+    });
+  }, [xpAnim]);
+
+  // animate XP gain, handling level-up boundaries
+  const animateXPGain = useCallback(async (fromXP, toXP) => {
+    let curXP = fromXP;
+    let curLevel = calcLevelFromXP(curXP);
+    const targetLevel = calcLevelFromXP(toXP);
+
+    // animate through each level boundary
+    while (curLevel < targetLevel) {
+      const upper = xpThreshold(curLevel + 1);
+      const pctUpper = percentForXP(upper);
+      // animate to 100% for this level
+      await animateXPTo(1, Math.max(300, 600 * (1 - percentForXP(curXP))));
+      // flash level-up
+      setLastPowerup(`⬆️ LEVEL UP! ${curLevel + 1}`);
+      // reset bar to 0 instantly and advance
+      xpAnim.setValue(0);
+      curXP = upper;
+      curLevel += 1;
+      // small pause so player sees level-up
+      await new Promise((r) => setTimeout(r, 350));
+    }
+
+    // animate to final percent within final level
+    const finalPct = percentForXP(toXP);
+    await animateXPTo(finalPct, Math.max(200, 500 * Math.abs(finalPct - percentForXP(curXP))));
+  }, [animateXPTo, calcLevelFromXP, percentForXP, xpThreshold, xpAnim]);
+
+  // Award XP and persist; also trigger animated bar and popups
+  const awardXP = useCallback(async (amount) => {
+    const prev = playerXPRef.current;
+    const next = prev + amount;
+
+    // popup
+    const id = ++popupId.current;
+    const text = `+${amount} XP`;
+    setPopups((p) => [...p, { id, text }]);
+    setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 1000);
+
+    // animate
+    try {
+      await animateXPGain(prev, next);
+    } catch (_) {}
+
+    // apply to state
+    setPlayerXP(next);
+    setPlayerLevel(calcLevelFromXP(next));
+
+    // persist
+    try {
+      await addPlayerXP(amount);
+    } catch (_) {}
+  }, [animateXPGain, calcLevelFromXP]);
 
   const adsRemovedRef = useRef(false);
 
@@ -310,6 +420,8 @@ export default function Game({
 
       // Increment rows-cleared and check clean_sweep achievement
       rowsClearedRef.current += rowIndices.length;
+      // Award XP for cleared rows (steady-grind progression)
+      try { awardXP(XP_PER_ROW * rowIndices.length); } catch (_) {}
       if (rowsClearedRef.current >= 3) triggerAchievement("clean_sweep");
 
       setTimeout(() => {
@@ -455,6 +567,7 @@ export default function Game({
           case "BOMB":
             setLastPowerup("💣 ROW DESTROYED!");
             SoundManager.play("specialBomb");
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             clearRows([rowIdx], POINTS_PER_ROW);
             // Track bomb achievement
             incrementBombs().then((total) => {
@@ -486,6 +599,7 @@ export default function Game({
                 }),
               );
               setClickCount((p) => p + 1);
+              try { awardXP(XP_PER_CLICK); } catch (_) {}
               break;
             }
             setLastPowerup("⚡ ROW ZAPPED!");
@@ -505,6 +619,7 @@ export default function Game({
             // Increment clickCount so a successful zap advances the row-spawn
             // counter consistently with the fizzle (no-target) path above.
             setClickCount((p) => p + 1);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             break;
           }
 
@@ -530,6 +645,7 @@ export default function Game({
             setLastPowerup("🌈 ROW PAINTED!");
             SoundManager.play("specialRainbow");
             addScore(POINTS_PER_CLICK, null, tapPos);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -546,6 +662,7 @@ export default function Game({
             setLastPowerup("⭐ +500 BONUS!");
             SoundManager.play("specialStar");
             addScore(500);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -571,6 +688,7 @@ export default function Game({
             // accidentally triggering a spawn on the same tick as the bonus.
             setFreezeBonus((b) => b + clicksPerRow);
             addScore(POINTS_PER_CLICK * 2, null, tapPos);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -605,6 +723,7 @@ export default function Game({
         }),
       );
       setClickCount((p) => p + 1);
+      try { awardXP(XP_PER_CLICK); } catch (_) {}
     },
     [
       grid,
@@ -718,6 +837,10 @@ export default function Game({
           onWatchAd={handleWatchAd}
           rewardedReady={rewardedReady && !adsRemovedRef.current}
           wave={wave}
+          level={playerLevel}
+          xp={playerXP}
+          xpToNext={Math.max(0, xpThreshold(playerLevel + 1) - playerXP)}
+          xpAnim={xpAnim}
         />
 
         <GameBoard

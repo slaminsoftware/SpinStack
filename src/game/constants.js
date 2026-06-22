@@ -26,6 +26,13 @@ export const DANGER_START  = 6;
 export const CLICKS_PER_NEW_ROW  = 8;
 export const POINTS_PER_CLICK    = 5;
 export const POINTS_PER_ROW      = 100;
+
+// XP / Progression tuning
+export const XP_PER_CLICK = 10;       // XP awarded per tile tap
+export const XP_PER_ROW   = 50;       // XP awarded per cleared row
+export const XP_BASE      = 100;      // Base XP scaling for level curve
+export const XP_EXPONENT  = 1.4;      // Exponent for level XP curve
+
 export const SPECIAL_SPAWN_CHANCE = 0.06;
 export const SIDES = 4; // Rubik's cube: front, right, back, left
 
