@@ -4,7 +4,7 @@
 // colorblind mode, RAINBOW dominant-color fix, enriched stats tracking.
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, ScrollView, PanResponder, StyleSheet } from "react-native";
+import { View, Text, ScrollView, PanResponder, StyleSheet, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import GameHeader from "./GameHeader";
@@ -93,13 +93,28 @@ export default function Game({
   const [playerXP, setPlayerXP] = useState(0);
   const [playerLevel, setPlayerLevel] = useState(1);
 
-  // XP curve helpers
-  const xpForLevel = useCallback((lvl) => Math.floor(XP_BASE * Math.pow(lvl, XP_EXPONENT)), []);
+  // keep a ref with current xp for safe reads inside callbacks
+  const playerXPRef = useRef(0);
+  useEffect(() => { playerXPRef.current = playerXP; }, [playerXP]);
+
+  // XP curve helpers: thresholds are total XP required to reach given level
+  const xpThreshold = useCallback((lvl) => (lvl <= 1 ? 0 : Math.floor(XP_BASE * Math.pow(lvl - 1, XP_EXPONENT))), []);
   const calcLevelFromXP = useCallback((xp) => {
     let lvl = 1;
-    while (xp >= xpForLevel(lvl + 1)) lvl++;
+    while (xp >= xpThreshold(lvl + 1)) lvl++;
     return lvl;
-  }, [xpForLevel]);
+  }, [xpThreshold]);
+
+  // Animated XP bar value (0..1)
+  const xpAnim = useRef(new Animated.Value(0)).current;
+
+  // helper to compute percent into current level
+  const percentForXP = useCallback((xp) => {
+    const lvl = calcLevelFromXP(xp);
+    const lower = xpThreshold(lvl);
+    const upper = xpThreshold(lvl + 1) || lower + 1;
+    return Math.max(0, Math.min(1, (xp - lower) / (upper - lower)));
+  }, [calcLevelFromXP, xpThreshold]);
 
   // Load persisted XP on mount
   useEffect(() => {
@@ -108,25 +123,75 @@ export default function Game({
       if (!mounted) return;
       setPlayerXP(xp);
       setPlayerLevel(calcLevelFromXP(xp));
+      // initialise animated bar
+      xpAnim.setValue(percentForXP(xp));
     });
     return () => { mounted = false; };
-  }, [calcLevelFromXP]);
+  }, [calcLevelFromXP, percentForXP, xpAnim]);
 
-  // Award XP and persist; also handle level-up notification
-  const awardXP = useCallback(async (amount) => {
-    setPlayerXP((prev) => {
-      const next = prev + amount;
-      const newLevel = calcLevelFromXP(next);
-      if (newLevel > playerLevel) {
-        setPlayerLevel(newLevel);
-        setLastPowerup(`⬆️ LEVEL UP! ${newLevel}`);
-      }
-      return next;
+  // animate xp bar to a target percent over given duration
+  const animateXPTo = useCallback((target, duration = 500) => {
+    return new Promise((res) => {
+      Animated.timing(xpAnim, {
+        toValue: target,
+        duration,
+        useNativeDriver: false,
+      }).start(() => res());
     });
+  }, [xpAnim]);
+
+  // animate XP gain, handling level-up boundaries
+  const animateXPGain = useCallback(async (fromXP, toXP) => {
+    let curXP = fromXP;
+    let curLevel = calcLevelFromXP(curXP);
+    const targetLevel = calcLevelFromXP(toXP);
+
+    // animate through each level boundary
+    while (curLevel < targetLevel) {
+      const upper = xpThreshold(curLevel + 1);
+      const pctUpper = percentForXP(upper);
+      // animate to 100% for this level
+      await animateXPTo(1, Math.max(300, 600 * (1 - percentForXP(curXP))));
+      // flash level-up
+      setLastPowerup(`⬆️ LEVEL UP! ${curLevel + 1}`);
+      // reset bar to 0 instantly and advance
+      xpAnim.setValue(0);
+      curXP = upper;
+      curLevel += 1;
+      // small pause so player sees level-up
+      await new Promise((r) => setTimeout(r, 350));
+    }
+
+    // animate to final percent within final level
+    const finalPct = percentForXP(toXP);
+    await animateXPTo(finalPct, Math.max(200, 500 * Math.abs(finalPct - percentForXP(curXP))));
+  }, [animateXPTo, calcLevelFromXP, percentForXP, xpThreshold, xpAnim]);
+
+  // Award XP and persist; also trigger animated bar and popups
+  const awardXP = useCallback(async (amount) => {
+    const prev = playerXPRef.current;
+    const next = prev + amount;
+
+    // popup
+    const id = ++popupId.current;
+    const text = `+${amount} XP`;
+    setPopups((p) => [...p, { id, text }]);
+    setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 1000);
+
+    // animate
+    try {
+      await animateXPGain(prev, next);
+    } catch (_) {}
+
+    // apply to state
+    setPlayerXP(next);
+    setPlayerLevel(calcLevelFromXP(next));
+
+    // persist
     try {
       await addPlayerXP(amount);
     } catch (_) {}
-  }, [calcLevelFromXP, playerLevel]);
+  }, [animateXPGain, calcLevelFromXP]);
 
   const adsRemovedRef = useRef(false);
 
@@ -774,7 +839,8 @@ export default function Game({
           wave={wave}
           level={playerLevel}
           xp={playerXP}
-          xpToNext={Math.max(0, xpForLevel(playerLevel + 1) - playerXP)}
+          xpToNext={Math.max(0, xpThreshold(playerLevel + 1) - playerXP)}
+          xpAnim={xpAnim}
         />
 
         <GameBoard
