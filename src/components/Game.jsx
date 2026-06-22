@@ -22,6 +22,10 @@ import {
   POINTS_PER_ROW,
   SIDES,
   ACHIEVEMENTS,
+  XP_PER_CLICK,
+  XP_PER_ROW,
+  XP_BASE,
+  XP_EXPONENT,
 } from "../game/constants";
 import {
   makeInitialGrid,
@@ -40,6 +44,8 @@ import {
   getColorblindMode,
   setColorblindModePref,
   getAdsRemoved,
+  getPlayerXP,
+  addPlayerXP,
 } from "../game/storage";
 import { shared, palette } from "../theme";
 
@@ -82,6 +88,45 @@ export default function Game({
   const [overtimeSeconds, setOvertimeSeconds] = useState(OVERTIME_SECONDS);
   const [lastAchievement, setLastAchievement] = useState(null);
   const [rewardedReady, setRewardedReady] = useState(false);
+
+  // Player progression (XP & Level)
+  const [playerXP, setPlayerXP] = useState(0);
+  const [playerLevel, setPlayerLevel] = useState(1);
+
+  // XP curve helpers
+  const xpForLevel = useCallback((lvl) => Math.floor(XP_BASE * Math.pow(lvl, XP_EXPONENT)), []);
+  const calcLevelFromXP = useCallback((xp) => {
+    let lvl = 1;
+    while (xp >= xpForLevel(lvl + 1)) lvl++;
+    return lvl;
+  }, [xpForLevel]);
+
+  // Load persisted XP on mount
+  useEffect(() => {
+    let mounted = true;
+    getPlayerXP().then((xp) => {
+      if (!mounted) return;
+      setPlayerXP(xp);
+      setPlayerLevel(calcLevelFromXP(xp));
+    });
+    return () => { mounted = false; };
+  }, [calcLevelFromXP]);
+
+  // Award XP and persist; also handle level-up notification
+  const awardXP = useCallback(async (amount) => {
+    setPlayerXP((prev) => {
+      const next = prev + amount;
+      const newLevel = calcLevelFromXP(next);
+      if (newLevel > playerLevel) {
+        setPlayerLevel(newLevel);
+        setLastPowerup(`⬆️ LEVEL UP! ${newLevel}`);
+      }
+      return next;
+    });
+    try {
+      await addPlayerXP(amount);
+    } catch (_) {}
+  }, [calcLevelFromXP, playerLevel]);
 
   const adsRemovedRef = useRef(false);
 
@@ -310,6 +355,8 @@ export default function Game({
 
       // Increment rows-cleared and check clean_sweep achievement
       rowsClearedRef.current += rowIndices.length;
+      // Award XP for cleared rows (steady-grind progression)
+      try { awardXP(XP_PER_ROW * rowIndices.length); } catch (_) {}
       if (rowsClearedRef.current >= 3) triggerAchievement("clean_sweep");
 
       setTimeout(() => {
@@ -455,6 +502,7 @@ export default function Game({
           case "BOMB":
             setLastPowerup("💣 ROW DESTROYED!");
             SoundManager.play("specialBomb");
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             clearRows([rowIdx], POINTS_PER_ROW);
             // Track bomb achievement
             incrementBombs().then((total) => {
@@ -486,6 +534,7 @@ export default function Game({
                 }),
               );
               setClickCount((p) => p + 1);
+              try { awardXP(XP_PER_CLICK); } catch (_) {}
               break;
             }
             setLastPowerup("⚡ ROW ZAPPED!");
@@ -505,6 +554,7 @@ export default function Game({
             // Increment clickCount so a successful zap advances the row-spawn
             // counter consistently with the fizzle (no-target) path above.
             setClickCount((p) => p + 1);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             break;
           }
 
@@ -530,6 +580,7 @@ export default function Game({
             setLastPowerup("🌈 ROW PAINTED!");
             SoundManager.play("specialRainbow");
             addScore(POINTS_PER_CLICK, null, tapPos);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -546,6 +597,7 @@ export default function Game({
             setLastPowerup("⭐ +500 BONUS!");
             SoundManager.play("specialStar");
             addScore(500);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -571,6 +623,7 @@ export default function Game({
             // accidentally triggering a spawn on the same tick as the bonus.
             setFreezeBonus((b) => b + clicksPerRow);
             addScore(POINTS_PER_CLICK * 2, null, tapPos);
+            try { awardXP(XP_PER_CLICK); } catch (_) {}
             setGrid((prev) =>
               prev.map((row, r) => {
                 if (r !== rowIdx || !row) return row;
@@ -605,6 +658,7 @@ export default function Game({
         }),
       );
       setClickCount((p) => p + 1);
+      try { awardXP(XP_PER_CLICK); } catch (_) {}
     },
     [
       grid,
@@ -718,6 +772,9 @@ export default function Game({
           onWatchAd={handleWatchAd}
           rewardedReady={rewardedReady && !adsRemovedRef.current}
           wave={wave}
+          level={playerLevel}
+          xp={playerXP}
+          xpToNext={Math.max(0, xpForLevel(playerLevel + 1) - playerXP)}
         />
 
         <GameBoard

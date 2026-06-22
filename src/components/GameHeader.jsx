@@ -44,6 +44,9 @@ export default function GameHeader({
   onWatchAd,
   rewardedReady,
   wave = 1,
+  level = 1,
+  xp = 0,
+  xpToNext = 0,
 }) {
   return (
     <>
@@ -71,8 +74,12 @@ export default function GameHeader({
           <Text style={[shared.statValue, { color: wave > 1 ? '#ffd700' : '#a0a0ff' }]}>{wave}</Text>
         </View>
         <View style={shared.statBox}>
-          <Text style={shared.statLabel}>ROWS</Text>
-          <Text style={shared.statValue}>{activeCount}</Text>
+          <Text style={shared.statLabel}>LEVEL</Text>
+          <Text style={shared.statValue}>{level}</Text>
+        </View>
+        <View style={shared.statBox}>
+          <Text style={shared.statLabel}>XP</Text>
+          <Text style={shared.statValue}>{xp.toLocaleString()}</Text>
         </View>
         <View style={shared.statBox}>
           <Text style={shared.statLabel}>NEXT ROW</Text>

@@ -13,6 +13,7 @@ const KEY = {
   colorblindMode:   'spinstack:colorblindMode',
   tutorialComplete: 'spinstack:tutorialComplete',
   adsRemoved:       'spinstack:adsRemoved',
+  playerXP:         'spinstack:playerXP',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -106,3 +107,24 @@ export async function getAdsRemoved() {
 export async function setAdsRemoved() {
   return setJSON(KEY.adsRemoved, true);
 }
+
+// ─── Player XP / Progression ─────────────────────────────────────────────────
+export async function getPlayerXP() {
+  return getJSON(KEY.playerXP, 0);
+}
+
+export async function setPlayerXP(xp) {
+  return setJSON(KEY.playerXP, xp);
+}
+
+export async function addPlayerXP(amount) {
+  const cur = await getPlayerXP();
+  const next = cur + amount;
+  await setPlayerXP(next);
+  return next;
+}
+
+export async function resetPlayerXP() {
+  return setJSON(KEY.playerXP, 0);
+}
+
